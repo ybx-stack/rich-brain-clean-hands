@@ -1,0 +1,20 @@
+# Runtime / scratch
+*.log
+*.tmp
+scratch/
+RAW/
+raw/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Secrets — never commit
+.env
+*.key
+*.pem
+secrets/
