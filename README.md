@@ -84,11 +84,26 @@ This pattern is **convergent** with existing ideas, stated plainly:
 
 **What this contributes is the discipline layer, not a new paradigm:** cross-vendor process isolation + a file-mediated, forcibly-compressed return channel that *structurally* prevents return-pollution.
 
+## Executor — Choose Your Own
+
+The clean hands executor is **pluggable**. Use whatever fits your stack:
+
+| Type | Examples |
+|---|---|
+| **LLM CLI** (headless, Auto mode) | OpenAI Codex CLI, Claude Code CLI, Aider, Gemini CLI, Ollama |
+| **IDE** (visual, Watched mode) | Cursor, Windsurf, VS Code + Continue/Copilot, JetBrains AI |
+| **No LLM** (deterministic) | Python scripts, jq/ripgrep pipelines, custom ETL |
+
+Full comparison and launcher templates: [`docs/EXECUTORS.md`](docs/EXECUTORS.md).
+
+The rich brain and clean hands can run on **different models from different vendors** — use your expensive model for the brain, your cheap one for the hands.
+
 ## Reference Implementation
 
-- **Runnable demo** — [`demo/`](demo/). Self-contained, no API keys needed.
+- **Runnable demo** — [`demo/`](demo/). Self-contained, no API keys needed, `python run_demo.py`.
 - **Full pattern write-up** — [`docs/PATTERN.md`](docs/PATTERN.md). Detailed mechanics, field notes, encoding fixes.
-- **LLM CLI reference** — [`examples/codex-reference/`](examples/codex-reference/). Shows the pattern wired to a real LLM executor CLI.
+- **Executor guide** — [`docs/EXECUTORS.md`](docs/EXECUTORS.md). CLI/IDE/script options, launcher templates, cost arbitrage.
+- **Production SKILL reference** — [`examples/codex-reference/`](examples/codex-reference/). Full decision tree, three worked examples.
 
 ## Why the name
 
@@ -98,9 +113,11 @@ A **rich brain** hoards context and makes judgment calls — it must stay unpoll
 
 - [x] Runnable demo (no API keys needed)
 - [x] Multi-mode architecture (Mode A/B + Auto/Watched/Background)
-- [ ] Pluggable executor interface (decouple from any specific CLI)
-- [ ] Cross-platform launcher (currently Windows/PowerShell notes)
-- [ ] More worked examples (binary RE, JS bundle, log analysis)
+- [x] Pluggable executor guide (CLI / IDE / script — choose your own)
+- [x] Cross-platform launchers (PowerShell + Bash templates)
+- [x] Worked examples (binary RE, JS bundle, log analysis)
+- [ ] pip-installable library with executor adapters
+- [ ] Interactive setup wizard ("what's your executor? here's your config")
 
 ## License
 
