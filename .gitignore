@@ -3,7 +3,11 @@
 *.tmp
 scratch/
 RAW/
-raw/
+demo/workspace/
+
+# Python
+__pycache__/
+*.pyc
 
 # OS
 .DS_Store

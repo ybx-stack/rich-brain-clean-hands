@@ -2,11 +2,21 @@
 
 > A two-brain delegation pattern for LLM agents — keep the deciding brain's context clean, exile the heavy deterministic work to an isolated executor, and only ever pull back compressed results.
 
-**Status: v0.1** — concept + reference implementation. Rough edges expected; the *ideas* are the point. Feedback and discussion welcome.
+**Status: v0.2** — runnable demo + multi-mode architecture. Feedback welcome.
 
 一句话中文：**富脑负责决策、净手负责脏活**——把大输出、低决策的确定性重活丢给一个隔离的执行器进程，主脑永远只读回压缩后的结果，从机制上挡住上下文污染和 token 浪费。
 
 ---
+
+## Quick Start
+
+```bash
+git clone https://github.com/ybx-stack/rich-brain-clean-hands.git
+cd rich-brain-clean-hands/demo
+python run_demo.py
+```
+
+No API keys, no external deps — pure Python stdlib. See [`demo/`](demo/) for details.
 
 ## The Problem
 
@@ -26,58 +36,71 @@ Split the agent into two roles:
 
 Three disciplines make it more than "just a sub-agent":
 
-1. **Process isolation** — clean hands runs as its own process with its own context window. It can even be a **different model / vendor** (the reference implementation drives a separate CLI). The rich brain's token budget never absorbs the executor's.
+1. **Process isolation** — clean hands runs as its own process with its own context window. It can even be a **different model / vendor** (the reference implementation uses a cross-vendor CLI). The rich brain's token budget never absorbs the executor's.
 2. **File as the only hand-off** — raw output goes to a `RAW/` quarantine the rich brain is *forbidden* to read; refined output goes to a compact result file.
-3. **The read-back is forcibly compressed** — the rich brain only ever reads a small structured result (JSON), never the executor's full log. This is exactly what sub-agents don't enforce, and it's the whole point: **the return channel is clamped shut, so it can't re-pollute.**
+3. **The read-back is forcibly compressed** — the rich brain only ever reads a small structured result (JSON), never the executor's full log. This is exactly what sub-agents don't enforce: **the return channel is clamped shut, so it can't re-pollute.**
 
 > Pull raw → write to file → forget → let clean hands refine → read only the digest.
 
-## Three-Way Task Split (the rich brain decides first)
+## Three-Way Task Split (decide first)
 
 Before any delegation mechanics, decide **who** does the work:
 
-1. **Rich brain solo** — clean hands can't or shouldn't touch it: anything needing a browser / interactive debugging, live decisions, or output too small to be worth delegating. Stays in the rich brain.
-2. **Rich brain pulls + clean hands refines** — data is behind a barrier (login, WAF, dynamic runtime), but the *refining* is the heavy part. Rich brain does the minimal pull, hands off the bulk parsing.
-3. **Clean hands full** — local / offline / no barrier; clean hands both pulls and refines.
+| Class | Who does it | When |
+|---|---|---|
+| **Rich brain solo** | Rich brain only | Browser/interactive work, live decisions, output < 50 lines |
+| **Rich brain pulls + clean hands refines** | Both | Data behind a barrier (login, WAF, CAPTCHA) — rich brain does minimal pull, clean hands does bulk parsing |
+| **Clean hands full** | Clean hands only | Local / offline / no access barrier |
 
-Only #2 and #3 delegate. Launch styles below apply only to them.
+Only the last two delegate. Launch styles below apply only to them.
 
-## Two Launch Styles
+## Two Data Acquisition Modes
+
+| Mode | Data flow | When |
+|---|---|---|
+| **Mode A — Clean Hands Full** | Clean hands pulls raw → refines → writes compact result | Source is local, offline, or freely accessible |
+| **Mode B — Rich Brain Pulls** | Rich brain pulls data → writes to RAW/ → clean hands refines | Source needs browser, MCP, login, WAF bypass, CAPTCHA |
+
+Key rule for Mode B: the rich brain pulls data and **immediately writes it to file**. Do NOT keep large raw data in the conversation context. Pull → save → forget → delegate.
+
+## Three Launch Styles
 
 | Style | Rich brain's posture | Completion signal | When |
 |---|---|---|---|
-| **Auto** (自动挡) | fires the executor and lets go | process exit → auto-resume (short: blocking call; long: background callback) | trusted, deterministic, clear-boundary work |
-| **Watched** (监督挡) | opens a visible window and watches | human reports "done" | new task type, fuzzy boundary, debugging — keep an eye on it |
+| **Auto — background** (default) | Fires executor, lets go | Process exit → harness auto-resumes | Long/unknown-duration work |
+| **Auto — foreground** | Blocks on the call | Call returns when executor exits | Clearly tiny tasks only (seconds) |
+| **Watched** | Opens a visible window | Human reports "done" | New task type, fuzzy boundary, debugging |
 
-Both share one launcher; only the ending line and the launch command differ. Auto is hands-off; Watched keeps a human in the loop.
+**Default to background.** Agents systematically underestimate task duration. Guessing wrong on foreground risks hitting the harness timeout wall → killed process → stuck state. When in doubt, background.
 
 ## Related Work / Prior Art
 
-This pattern is **convergent** with a lot of existing ideas, and that is stated plainly so there's no confusion about what's actually new:
+This pattern is **convergent** with existing ideas, stated plainly:
 
 - **Sub-agents** (e.g. Claude Code's Task tool) — isolated context, but **no enforced compression of the return message**.
 - **CrewAI / AutoGen / LangGraph handoffs** — multi-agent orchestration, typically same-vendor and in-process.
-- **Blackboard systems** — a shared external store as the coordination medium; the file-mediated hand-off here is a descendant of that idea.
-- **External memory / RAG** — moving state out of the window; this is the same instinct applied at the *agent orchestration* layer.
+- **Blackboard systems** — shared external store as the coordination medium; the file-mediated hand-off here is a descendant.
+- **External memory / RAG** — moving state out of the window; the same instinct applied at the agent orchestration layer.
 
-**What this contributes is the discipline layer, not a new paradigm:** cross-vendor process isolation + a file-mediated, forcibly-compressed return channel that *structurally* prevents return-pollution. It is a strict, opinionated take on delegation — deliberately narrow, deliberately enforced.
+**What this contributes is the discipline layer, not a new paradigm:** cross-vendor process isolation + a file-mediated, forcibly-compressed return channel that *structurally* prevents return-pollution.
 
 ## Reference Implementation
 
-See [`examples/codex-reference/`](examples/codex-reference/). It drives a separate CLI as the clean-hands executor via a task-packet contract (objective / input / allowed / forbidden / output / stop). **The executor is pluggable** — the reference happens to use one CLI, but any isolated process that reads a packet and writes a compact result fits.
-
-Full write-up of the mechanics: [`docs/PATTERN.md`](docs/PATTERN.md).
+- **Runnable demo** — [`demo/`](demo/). Self-contained, no API keys needed.
+- **Full pattern write-up** — [`docs/PATTERN.md`](docs/PATTERN.md). Detailed mechanics, field notes, encoding fixes.
+- **LLM CLI reference** — [`examples/codex-reference/`](examples/codex-reference/). Shows the pattern wired to a real LLM executor CLI.
 
 ## Why the name
 
-A **rich brain** hoards context and makes judgment calls — it must stay unpolluted to think. **Clean hands** do the dirty, bulky, repetitive work and hand back only what's clean enough to eat. The metaphor *is* the architecture: keep the thinker's hands out of the mud, and keep the mud out of the thinker's head.
+A **rich brain** hoards context and makes judgment calls — it must stay unpolluted to think. **Clean hands** do the dirty, bulky, repetitive work and hand back only what's clean enough to eat. The metaphor *is* the architecture.
 
 ## Roadmap
 
-- [ ] Decouple from the reference CLI — pluggable executor interface
-- [ ] Cross-platform launcher (currently Windows/PowerShell notes included)
-- [ ] Minimal quickstart others (and their AIs) can deploy in one shot
-- [ ] Worked examples beyond the reference
+- [x] Runnable demo (no API keys needed)
+- [x] Multi-mode architecture (Mode A/B + Auto/Watched/Background)
+- [ ] Pluggable executor interface (decouple from any specific CLI)
+- [ ] Cross-platform launcher (currently Windows/PowerShell notes)
+- [ ] More worked examples (binary RE, JS bundle, log analysis)
 
 ## License
 
