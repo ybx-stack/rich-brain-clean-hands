@@ -103,6 +103,7 @@ The rich brain and clean hands can run on **different models from different vend
 - **Runnable demo** — [`demo/`](demo/). Self-contained, no API keys needed, `python run_demo.py`.
 - **Full pattern write-up** — [`docs/PATTERN.md`](docs/PATTERN.md). Detailed mechanics, field notes, encoding fixes.
 - **Executor guide** — [`docs/EXECUTORS.md`](docs/EXECUTORS.md). CLI/IDE/script options, launcher templates, cost arbitrage.
+- **RE field guide** — [`docs/REVERSE-ENGINEERING.md`](docs/REVERSE-ENGINEERING.md). Why RE is the ideal use case, 6 workflow patterns, lessons learned, packet templates.
 - **Production SKILL reference** — [`examples/codex-reference/`](examples/codex-reference/). Full decision tree, three worked examples.
 
 ## Why the name
@@ -116,6 +117,8 @@ A **rich brain** hoards context and makes judgment calls — it must stay unpoll
 - [x] Pluggable executor guide (CLI / IDE / script — choose your own)
 - [x] Cross-platform launchers (PowerShell + Bash templates)
 - [x] Worked examples (binary RE, JS bundle, log analysis)
+- [x] Reverse engineering field guide (real-world RE workflows)
+- [ ] MCP multi-clean-hands — multiple specialized executors coordinated by one rich brain
 - [ ] pip-installable library with executor adapters
 - [ ] Interactive setup wizard ("what's your executor? here's your config")
 
